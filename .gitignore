@@ -7,3 +7,4 @@ migrations/
 *.project
 .vscode
 .env
+db.sqlite3
