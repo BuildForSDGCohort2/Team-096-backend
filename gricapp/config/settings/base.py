@@ -55,8 +55,13 @@ DJANGO_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
 )
-THIRD_PARTY_APPS = ()
-LOCAL_APPS = ()
+THIRD_PARTY_APPS = (
+    'rest_framework',
+)
+
+LOCAL_APPS = (
+    'gricapi',
+)
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
@@ -147,3 +152,7 @@ STATICFILES_FINDERS = (
 )  #  specifications on what files to look for
 
 MEDIA_URL = '/media/'
+
+# djangorestframework configurations
+REST_FRAMEWORK = {
+}
