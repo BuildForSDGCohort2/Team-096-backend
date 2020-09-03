@@ -6,3 +6,4 @@ migrations/
 *.swp
 *.project
 .vscode
+.env
