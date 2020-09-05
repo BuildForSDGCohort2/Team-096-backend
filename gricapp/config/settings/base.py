@@ -10,7 +10,6 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.2/ref/settings/
 """
 
-import os
 import environ
 from decouple import config, Csv
 from dj_database_url import parse as db_url
@@ -27,9 +26,9 @@ env = environ.Env()
 # to ensure no errors are encountered at runserver/migrations
 READ_DOT_ENV_FILE = env.bool('DJANGO_READ_DOT_ENV_FILE', default=False)
 if READ_DOT_ENV_FILE:
-    env_file = str(ROOT_DIR.path('.env'))
-    print('Loading : {}'.format(env_file))
-    env.read_env(env_file)
+    ENV_FILE = str(ROOT_DIR.path('.env'))
+    print('Loading : {}'.format(ENV_FILE))
+    env.read_env(ENV_FILE)
     print('The .env file has been loaded. See base.py for more information')
 
 # Quick-start development settings - unsuitable for production
@@ -97,7 +96,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': config(
         'DATABASE_URL',
-        default='sqlite:///'+ str(ROOT_DIR.path('db.sqlite3')),
+        default='sqlite:///' + str(ROOT_DIR.path('db.sqlite3')),
         cast=db_url
     )
 }
@@ -140,10 +139,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = str(ROOT_DIR('staticfiles'))  # where the collected static files will be placed
+# where the collected static files will be placed
+STATIC_ROOT = str(ROOT_DIR('staticfiles'))
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-)  #  specifications on what files to look for
+)  # specifications on what files to look for
 
 MEDIA_URL = '/media/'
