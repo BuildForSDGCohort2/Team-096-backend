@@ -1,3 +1,4 @@
-import base
+# pylint: disable=wildcard-import,unused-wildcard-import
+from .base import *  # NOQA
 
-base.DEBUG = True
+DEBUG = True
