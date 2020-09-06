@@ -1,3 +1,3 @@
-from .base import *
+import base
 
-DEBUG = True
+base.DEBUG = True
