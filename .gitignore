@@ -1,0 +1,9 @@
+__pycache__/
+migrations/
+*.pyc
+*.sqlite3
+*.env
+*.swp
+*.project
+.vscode
+.env
