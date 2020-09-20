@@ -17,7 +17,7 @@ class User(AbstractUser):
     REQUIRED_FIELDS = []
 
     is_farmer = models.BooleanField(default=False)
-    is_consumer = models.BooleanField(default=True)
+    is_investor = models.BooleanField(default=False)
 
     objects = CustomUserManager()
 
