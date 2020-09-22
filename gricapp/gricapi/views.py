@@ -1,10 +1,25 @@
 """
 Create views here
 """
-from django.shortcuts import render
+from gricapi.models import User, Profile, Produce
+from gricapi.serializers import (
+    UserSerializer, ProfileSerializer, ProduceSerializer
+)
+from rest_framework import status, viewsets
+from rest_framework.response import Response
 
-# Create your views here.
 
+class UserViewSet(viewsets.ModelViewSet):
+    """
+    retrieve:
+    Return the given user.
 
-def produce_details(request):
-    pass
+    list:
+    Return a list of all the existing users.
+
+    create:
+    Create a new user instance.
+
+    """
+    queryset = User.objects.all()
+    serializer_class = UserSerializer

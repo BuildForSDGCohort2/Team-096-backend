@@ -70,7 +70,8 @@ class Produce(models.Model):
     quantity = models.BigIntegerField(blank=True, default=0)
     measurement_unit = models.CharField(max_length=25, default="bags",
                                         choices=MEASUREMENT_UNITS)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
 
