@@ -23,3 +23,19 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+
+class ProduceViewSet(viewsets.ModelViewSet):
+    """
+    retrieve:
+    Return the given produce.
+
+    list:
+    Return a list of all the existing produce.
+
+    create:
+    Create a new produce instance.
+
+    """
+    queryset = Produce.objects.all()
+    serializer_class = ProduceSerializer

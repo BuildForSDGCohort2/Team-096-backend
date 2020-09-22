@@ -37,8 +37,8 @@ class UserSerializerTestCase(TestCase):
         profile = Profile.objects.create(**profile_attributes)
         serializer = ProfileSerializer(instance=profile)
         # nested user
-        self.assertEqual(serializer.data["user"]["email"], "hallo@example.com")
-        self.assertNotEqual(serializer.data["user"]["is_farmer"], True)
+        self.assertEqual(
+            serializer.data["user"]["email"], "hallo@example.com")
 
     def test_produce_contains_exact_content(self):
         produce_attributes = {

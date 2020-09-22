@@ -4,6 +4,13 @@ from rest_framework import serializers
 from . import models
 
 
+class UserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = models.User
+        fields = ("id", "email", "is_farmer", "is_investor")
+
+
 class ProfileSerializer(serializers.ModelSerializer):
     GENDER = (
         (None, 'Select gender'),
@@ -11,17 +18,11 @@ class ProfileSerializer(serializers.ModelSerializer):
         ('F', 'Female')
     )
 
+    user = UserSerializer()
+
     class Meta:
         model = models.Profile
         fields = ("id", "user", "gender", "address", "phone_number")
-
-
-class UserSerializer(serializers.ModelSerializer):
-    profile = ProfileSerializer()
-
-    class Meta:
-        model = models.User
-        fields = ("id", "email", "profile", "is_farmer", "is_investor")
 
 
 class ProduceSerializer(serializers.ModelSerializer):
