@@ -16,8 +16,7 @@ class User(AbstractUser):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
 
-    is_farmer = models.BooleanField(default=False)
-    is_investor = models.BooleanField(default=False)
+    date_joined = models.DateTimeField(auto_now_add=True)
 
     objects = CustomUserManager()
 
@@ -38,6 +37,8 @@ class Profile(models.Model):
     gender = models.CharField(max_length=6, choices=GENDER, null=True)
     address = models.CharField(max_length=60, blank=True, null=True)
     phone_number = models.BigIntegerField(blank=True, null=True)
+    is_farmer = models.BooleanField(default=False)
+    is_investor = models.BooleanField(default=False)
 
     def __str__(self):
         if self.user.is_farmer:
@@ -61,7 +62,8 @@ class Produce(models.Model):
 
     MEASUREMENT_UNITS = (
         ('Bags', 'bags'),
-        ('Tonnes', 'tonnes')
+        ('Tonnes', 'tonnes'),
+        ('Single units(Retail)', 'units')
     )
 
     produce_name = models.CharField(max_length=150, blank=False)
@@ -72,6 +74,7 @@ class Produce(models.Model):
                                         choices=MEASUREMENT_UNITS)
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    price_tag = models.FloatField(blank=True, null=True)
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
 
