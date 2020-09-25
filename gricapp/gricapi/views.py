@@ -1,12 +1,11 @@
 """
 Create views here
 """
-from gricapi.models import User, Profile, Produce
+from gricapi.models import User, Produce
 from gricapi.serializers import (
-    UserSerializer, ProfileSerializer, ProduceSerializer
+    UserSerializer, ProduceSerializer
 )
-from rest_framework import status, viewsets
-from rest_framework.response import Response
+from rest_framework import viewsets
 
 
 class UserViewSet(viewsets.ModelViewSet):

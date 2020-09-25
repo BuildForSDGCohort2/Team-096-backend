@@ -2,8 +2,10 @@
 
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from gricapi.models import Profile, Produce
-from gricapi.serializers import UserSerializer, ProfileSerializer, ProduceSerializer
+from gricapi.models import Produce
+from gricapi.serializers import (
+    UserSerializer, ProfileSerializer, ProduceSerializer
+)
 
 
 class UserSerializerTestCase(TestCase):
@@ -25,20 +27,21 @@ class UserSerializerTestCase(TestCase):
 
         self.assertEqual(data["id"], self.user_attributes["id"])
         self.assertCountEqual(data.keys(), [
-                              "id", "email", "is_investor", "is_farmer"])
+                              "id", "email", "first_name", "last_name", "profile", "date_joined"])
 
     def test_profile_serializer_contains_exact_content(self):
         profile_attributes = {
-            "id": 1,
-            "user": self.user,
             "gender":  "F",
             "phone_number": +23456
         }
-        profile = Profile.objects.create(**profile_attributes)
-        serializer = ProfileSerializer(instance=profile)
+        serializer = ProfileSerializer(instance=profile_attributes)
         # nested user
         self.assertEqual(
-            serializer.data["user"]["email"], "hallo@example.com")
+            serializer.data["gender"], profile_attributes['gender'])
+        self.user_attributes.update({"profile": profile_attributes})
+        detail_serializer = UserSerializer(instance=self.user_attributes)
+        self.assertEqual(
+            detail_serializer.data["profile"]["gender"], "F")
 
     def test_produce_contains_exact_content(self):
         produce_attributes = {

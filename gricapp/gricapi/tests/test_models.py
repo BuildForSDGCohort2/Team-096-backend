@@ -107,8 +107,8 @@ class UserModelTestCase(TestCase):
             email="hallo@test.com", password='foo')
         profile = Profile.objects.create(user=user)
         self.assertEqual(str(profile), "hallo@test.com")
-        user.is_farmer = True
-        user.save()
+        profile.is_farmer = True
+        profile.save()
         self.assertNotEqual(str(profile), "hallo@test.com")
         self.assertEqual(str(profile), "hallo@test.com is a farmer")
 
@@ -117,7 +117,7 @@ class UserModelTestCase(TestCase):
         profile2 = Profile.objects.create(user=user2)
         self.assertEqual(str(profile2), "Victory")
         self.assertNotEqual(str(profile2), "hallo2@test.com")
-        user2.is_farmer = True
-        user2.save()
+        profile2.is_farmer = True
+        profile2.save()
         self.assertNotEqual(str(profile2), "hallo2@test.com")
         self.assertEqual(str(profile2), "Victory is a farmer")

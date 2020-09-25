@@ -41,7 +41,7 @@ class Profile(models.Model):
     is_investor = models.BooleanField(default=False)
 
     def __str__(self):
-        if self.user.is_farmer:
+        if self.is_farmer:
             return "{} is a farmer".format(self.user)
         return "{}".format(self.user)
 
