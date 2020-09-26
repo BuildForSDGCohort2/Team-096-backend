@@ -67,8 +67,11 @@ class Produce(models.Model):
     )
 
     produce_name = models.CharField(max_length=150, blank=False)
-    produce_type = models.CharField(max_length=25, choices=PRODUCT_TYPE_CHOICES,
-                                    default=' ', null=False)
+    produce_type = models.CharField(
+        max_length=25,
+        choices=PRODUCT_TYPE_CHOICES,
+        default=' ', null=False
+    )
     quantity = models.BigIntegerField(blank=True, default=0)
     measurement_unit = models.CharField(max_length=25, default="bags",
                                         choices=MEASUREMENT_UNITS)

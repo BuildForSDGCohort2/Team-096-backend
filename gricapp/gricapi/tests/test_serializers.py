@@ -27,7 +27,8 @@ class UserSerializerTestCase(TestCase):
 
         self.assertEqual(data["id"], self.user_attributes["id"])
         self.assertCountEqual(data.keys(), [
-                              "id", "email", "first_name", "last_name", "profile", "date_joined"])
+                              "id", "email", "first_name", "last_name",
+                              "profile", "date_joined"])
 
     def test_profile_serializer_contains_exact_content(self):
         profile_attributes = {
