@@ -5,6 +5,14 @@ Create test cases for GricApp
 from django.test import TestCase
 from gricapi.models import Produce, User, Profile
 from django.contrib.auth import get_user_model
+from config.utilities import conf_reader
+from config.settings.base import ROOT_DIR
+
+# Get the test account credentials from the .credentials file
+credentials_file = str(ROOT_DIR.path('login.credentials'))
+EMAIL = conf_reader.get_value(credentials_file, 'LOGIN_USER')
+EMAIL2 = conf_reader.get_value(credentials_file, 'LOGIN_USER2')
+PASSWORD = conf_reader.get_value(credentials_file, 'LOGIN_PASSWORD')
 
 # Create your tests here.
 
@@ -17,8 +25,10 @@ class ProduceTestCase(TestCase):
     def setUp(self):
         """ Define test client and other test variables"""
         self.user = User.objects.create(email="herd@example.com")
-        self.produce = Produce.objects.create(produce_name="Orange", produce_type="Fruits",
-                                              owner=self.user)
+        self.produce = Produce.objects.create(
+            produce_name="Orange", produce_type="Fruits",
+            owner=self.user
+        )
 
     def test_model_can_create_new_produce(self):
         """ Test the Produce model can create new produce"""
@@ -62,41 +72,40 @@ class UserModelTestCase(TestCase):
         self.User = get_user_model()
 
     def test_create_user(self):
-        User = get_user_model()
-        user = User.objects.create_user(
-            email='normal@test.com', password='foo')
-        self.assertEqual(user.email, 'normal@test.com')
+        user = self.User.objects.create_user(
+            email=EMAIL, password=PASSWORD)
+        self.assertEqual(user.email, 'hallo@test.com')
         self.assertTrue(user.is_active)
         self.assertFalse(user.is_staff)
         self.assertFalse(user.is_superuser)
         self.assertIsNone(user.username)
         with self.assertRaises(TypeError):
-            User.objects.create_user()
+            self.User.objects.create_user()
         with self.assertRaises(TypeError):
-            User.objects.create_user(email='')
+            self.User.objects.create_user(email='')
         with self.assertRaises(ValueError):
-            User.objects.create_user(email='', password="foo")
+            self.User.objects.create_user(email='', password=PASSWORD)
 
     def test_create_superuser(self):
-        User = get_user_model()
-        admin_user = User.objects.create_superuser('super@test.com', 'foo')
-        self.assertEqual(admin_user.email, 'super@test.com')
+        admin_user = self.User.objects.create_superuser(
+            EMAIL, PASSWORD)
+        self.assertEqual(admin_user.email, 'hallo@test.com')
         self.assertTrue(admin_user.is_active)
         self.assertTrue(admin_user.is_staff)
         self.assertTrue(admin_user.is_superuser)
         self.assertIsNone(admin_user.username)
         with self.assertRaises(ValueError):
             User.objects.create_superuser(
-                email='super@user.com', password='foo', is_superuser=False)
+                email=EMAIL, password=PASSWORD, is_superuser=False)
 
     def test_user_string_returns_first_name_when_not_empty(self):
         """ Test user __str__ returns the first name of user """
         user = self.User.objects.create_user(
-            email="hallo@test.com", password='foo')
+            email=EMAIL, password=PASSWORD)
         self.assertEqual(str(user), "hallo@test.com")
         user2 = self.User.objects.create_user(
-            email="hallo2@test.com",
-            password="foo", first_name="Victory"
+            email=EMAIL2,
+            password=PASSWORD, first_name="Victory"
         )
         self.assertNotEqual(str(user2), "Victoryhallo2@test.com")
         self.assertEqual(str(user2), "Victory")
@@ -104,7 +113,7 @@ class UserModelTestCase(TestCase):
     def test_has_valid_profile_string(self):
         """ Test user has profile string """
         user = self.User.objects.create_user(
-            email="hallo@test.com", password='foo')
+            email=EMAIL, password=PASSWORD)
         profile = Profile.objects.create(user=user)
         self.assertEqual(str(profile), "hallo@test.com")
         profile.is_farmer = True
@@ -113,7 +122,7 @@ class UserModelTestCase(TestCase):
         self.assertEqual(str(profile), "hallo@test.com is a farmer")
 
         user2 = self.User.objects.create_user(
-            email="hallo2@test.com", password='foo', first_name="victory")
+            email=EMAIL2, password=PASSWORD, first_name="victory")
         profile2 = Profile.objects.create(user=user2)
         self.assertEqual(str(profile2), "Victory")
         self.assertNotEqual(str(profile2), "hallo2@test.com")

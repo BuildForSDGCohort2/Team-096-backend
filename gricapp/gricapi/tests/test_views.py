@@ -6,6 +6,13 @@ from rest_framework.test import APITestCase
 from rest_framework.views import status
 
 from gricapi.models import User, Profile
+from config.utilities import conf_reader
+from config.settings.base import ROOT_DIR
+
+# Get the test account credentials from the .credentials file
+credentials_file = str(ROOT_DIR.path('login.credentials'))
+EMAIL = conf_reader.get_value(credentials_file, 'LOGIN_USER')
+PASSWORD = conf_reader.get_value(credentials_file, 'LOGIN_PASSWORD')
 
 
 class UserListCreateAPIView(APITestCase):
@@ -35,7 +42,7 @@ class UserListCreateAPIView(APITestCase):
         self.assertEqual(profile.user, user)
 
     def test_get_user_list(self):
-        user = User(email="hallow@test.com", password="foo")
+        user = User(email=EMAIL, password=PASSWORD)
         user.save()
         response = self.client.get(self.url)
         response_json = response.json()
@@ -43,14 +50,14 @@ class UserListCreateAPIView(APITestCase):
         self.assertEqual(len(response_json), 1)
         data = response_json[0]
         self.assertEqual(data["id"], 1)
-        self.assertEqual(data["email"], "hallow@test.com")
+        self.assertEqual(data["email"], "hallo@test.com")
         self.assertIsNone(data['profile'])
 
 
 class UserDetailsAPIView(APITestCase):
     def setUp(self):
-        self.user = User(email="hallow@test.com",
-                         password="foo")
+        self.user = User(email=EMAIL,
+                         password=PASSWORD)
         self.user.save()
         self.profile = Profile.objects.create(user=self.user)
         self.url = reverse("api:user-detail", kwargs={'pk': self.user.id})
