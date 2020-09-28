@@ -91,6 +91,6 @@ class ProduceSerializer(serializers.ModelSerializer):
         model = Produce
         fields = (
             "id", "owner", "produce_name",
-            "produce_type", "quantity", "measurement_unit", "date_created"
+            "produce_category", "stock", "measurement_unit", "date_created"
         )
         read_only_fields = ("date_created", "owner")

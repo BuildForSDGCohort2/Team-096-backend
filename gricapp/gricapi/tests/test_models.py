@@ -3,7 +3,10 @@ Create test cases for GricApp
 """
 
 from django.test import TestCase
-from gricapi.models import Produce, User, Profile
+from django.db import IntegrityError
+from gricapi.models import (
+    Produce, User, Profile, Category, Order, OrderItem
+)
 from django.contrib.auth import get_user_model
 from config.utilities import conf_reader
 from config.settings.base import ROOT_DIR
@@ -25,22 +28,28 @@ class ProduceTestCase(TestCase):
     def setUp(self):
         """ Define test client and other test variables"""
         self.user = User.objects.create(email="herd@example.com")
+        self.category = Category.objects.create(name="Fruits")
         self.produce = Produce.objects.create(
-            produce_name="Orange", produce_type="Fruits",
+            produce_name="Orange",
+            produce_category=self.category,
             owner=self.user
         )
 
     def test_model_can_create_new_produce(self):
         """ Test the Produce model can create new produce"""
         old_count = Produce.objects.count()
-        Produce.objects.create(produce_name="Lake rice", owner=self.user)
+        Produce.objects.create(produce_name="Lake rice",
+                               produce_category=self.category,
+                               owner=self.user)
         new_count = Produce.objects.count()
         self.assertNotEqual(old_count, new_count)
 
     def test_model_return_produce_name_str(self):
         """ model '__str__' returns human readable strings 'produce_name' """
         produce = Produce.objects.create(
-            produce_name="Lake rice 3", owner=self.user)
+            produce_name="Lake rice 3",
+            produce_category=self.category,
+            owner=self.user)
         self.assertEqual(str(produce), "Lake rice 3")
 
     def test_produce_name_label(self):
@@ -54,15 +63,80 @@ class ProduceTestCase(TestCase):
         max_length = produce._meta.get_field('produce_name').max_length
         self.assertEqual(max_length, 150)
 
-    def test_produce_type_not_null(self):
+    def test_produce_category_not_null(self):
         produce = Produce.objects.get(id=1)
-        produce_type = produce._meta.get_field('produce_type').null
+        produce_type = produce._meta.get_field('produce_category').null
         self.assertNotEqual(produce_type, True)
+
+    def test_slug_is_unique(self):
+        produce1 = Produce.objects.get(id=1)
+        produce2 = Produce(
+            produce_name="Orange",
+            produce_category=self.category,
+            owner=self.user
+        )
+        produce2.save()
+        self.assertNotEqual(produce1.slug, produce2.slug)
 
     def test_get_absolute_url(self):
         produce = Produce.objects.get(id=1)
         # This will also fail if the urlconf is not defined.
         self.assertEqual(produce.get_absolute_url(), '/api/catalog/produce/1/')
+
+
+class ProduceSaveTest(TestCase):
+
+    def setUp(self):
+        self.produce_name = "Berry"
+        self.category = Category.objects.create(name="Fruits")
+        self.owner = User.objects.create(email=EMAIL, password=PASSWORD)
+        self.id = 3
+
+    def test_id_autoset(self):
+        prod = Produce.objects.create(
+            produce_name=self.produce_name,
+            produce_category=self.category,
+            owner=self.owner
+        )
+        self.assertEqual(prod.id, 1)
+        self.assertNotEqual(prod.slug, "")
+
+    def test_id_honoured_when_supplied(self):
+        prod = Produce.objects.create(
+            id=self.id,
+            produce_name=self.produce_name,
+            produce_category=self.category,
+            owner=self.owner
+        )
+        self.assertEqual(prod.id, self.id)
+
+    def test_id_resets(self):
+        prod = Produce.objects.create(
+            produce_name=self.produce_name,
+            produce_category=self.category,
+            owner=self.owner
+        )
+        prod.id = None
+        self.assertRaises(IntegrityError, prod.save())
+
+    def test_slug_is_set_auto(self):
+        prod = Produce.objects.create(
+            produce_name=self.produce_name,
+            slug="berry-000",
+            produce_category=self.category,
+            owner=self.owner
+        )
+        self.assertNotEqual(prod.slug, "berry-000")
+
+    def test_slug_is_not_empty_when_id_is_supplied(self):
+        prod = Produce.objects.create(
+            id=self.id,
+            produce_name=self.produce_name,
+            produce_category=self.category,
+            owner=self.owner
+        )
+        self.assertEqual(prod.id, self.id)
+        self.assertNotEqual(prod.slug, "")
 
 
 class UserModelTestCase(TestCase):
@@ -130,3 +204,52 @@ class UserModelTestCase(TestCase):
         profile2.save()
         self.assertNotEqual(str(profile2), "hallo2@test.com")
         self.assertEqual(str(profile2), "Victory is a farmer")
+
+
+class CategoryTest(TestCase):
+
+    def test_category_return_strings(self):
+        category = Category.objects.create(name="Vegetables")
+        self.assertEqual(str(category), "Vegetables")
+
+    def test_category_slug_autoset(self):
+        category = Category.objects.create(name="Fruits")
+        self.assertIsNotNone(category.slug)
+        category.slug = "fruityso--009"
+        category.save()
+        self.assertNotEqual(category.slug, "fruityso--009")
+
+    def test_category_slug_resets(self):
+        category = Category.objects.create(name="Minerals", slug="miney-00")
+        self.assertNotEqual(category.slug, "miney-00")
+
+
+class OrderTest(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(email=EMAIL2, password=PASSWORD)
+
+    def test_order_return_string(self):
+        order = Order.objects.create(consumer=self.user)
+        self.assertEqual(str(order), str(order.order_id))
+
+
+class OrderItemTest(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(email=EMAIL2, password=PASSWORD)
+        self.order = Order.objects.create(consumer=self.user)
+        self.category = Category.objects.create(name="Fruits")
+        self.produce = Produce.objects.create(
+            produce_name="Blueberry",
+            produce_category=self.category,
+            owner=self.user
+        )
+
+    def test_item_id_return_string(self):
+        item = OrderItem.objects.create(
+            order=self.order,
+            product=self.produce,
+            quantity_ordered=10
+        )
+        self.assertEqual(str(item), "Item" + str(item.item_id))
