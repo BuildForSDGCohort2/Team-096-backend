@@ -61,7 +61,8 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
-    def save(self, *args, **kwargs):  # pylint: disable=W:0221
+    # pylint: disable=arguments-differ,signature-differs
+    def save(self, *args, **kwargs):
         super(Category, self).save(*args, **kwargs)
         if not self.slug:
             strftime = "".join(str(timezone.now()).split("."))
@@ -108,7 +109,8 @@ class Produce(models.Model):
         """Return a human readable representation of the model instance."""
         return self.produce_name
 
-    def save(self, *args, **kwargs):  # pylint: disable=W:0221
+    # pylint: disable=arguments-differ,signature-differs
+    def save(self, *args, **kwargs):
         super(Produce, self).save(*args, **kwargs)
         if not self.slug:
             strftime = "".join(str(timezone.now()).split("."))
