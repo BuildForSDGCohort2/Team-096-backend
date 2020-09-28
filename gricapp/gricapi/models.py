@@ -148,6 +148,7 @@ class OrderItem(models.Model):
     def __str__(self):
         return "Item{}".format(self.item_id)
 
-    def save(self, *args, **kwargs):  # pylint: disable=W:279
+    # pylint: disable=arguments-differ,signature-differs
+    def save(self, *args, **kwargs):
         self.price = self.quantity_ordered * self.product.price_tag
         super(OrderItem, self).save(*args, **kwargs)
