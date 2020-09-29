@@ -52,7 +52,7 @@ class UserSerializerTestCase(TestCase):
             detail_serializer.data["profile"]["gender"], "F")
 
 
-class CategorySerializerTestCase(TestCase):
+class ProduceSerializerTestCase(TestCase):
     """ Testing the Category Serializer """
 
     def setUp(self):
@@ -61,15 +61,28 @@ class CategorySerializerTestCase(TestCase):
         self.user = User.objects.create_user(
             email=EMAIL2, password=PASSWORD
         )
-
-    def test_produce_contains_exact_content(self):
-        produce_attributes = {
+        self.produce_attributes = {
             "produce_name": "orange R",
             "produce_category": self.category,
             "stock": 30,
-            "owner": self.user
+            "measurement_unit": "bags",
+            "owner": self.user,
+            "price_tag": 12
         }
-        produce = Produce.objects.create(**produce_attributes)
-        serializer = ProduceSerializer(instance=produce)
-        self.assertEqual(serializer.data["owner"]
-                         ["email"], EMAIL2)
+        self.produce = Produce.objects.create(**self.produce_attributes)
+
+    def test_produce_contains_exact_content(self):
+        serializer = ProduceSerializer(instance=self.produce)
+        self.assertEqual(serializer.data["owner"], self.produce.owner.email)
+        self.assertEqual(serializer.data['stock'], self.produce.stock)
+
+    def test_measurement_units_must_be_in_choices(self):
+        self.produce_attributes['measurement_unit'] = 'single'
+        serializer = ProduceSerializer(
+            instance=self.produce,
+            data=self.produce_attributes
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(set(serializer.errors.keys()),
+                         set(['measurement_unit']))

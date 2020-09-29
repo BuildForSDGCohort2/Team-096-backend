@@ -1,7 +1,7 @@
 """ Serializers """
 
 from rest_framework import serializers
-from .models import User, Profile, Produce
+from .models import User, Profile, Produce, Category
 from django.utils import timezone
 
 
@@ -69,28 +69,90 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ProduceSerializer(serializers.ModelSerializer):
-    PRODUCT_TYPE_CHOICES = (
-        (' ', "Select your produce type"),
-        ('Fruits', 'Fruits'),
-        ("Cereals (Grains)", "Cereals"),
-        ('Oils', "Oils"),
-        ("Eggs", "Eggs"),
-        ("Meat", "Meat"),
-        ("Fish", "Fish"),
-        ("Raw materials (e.g rubber, cotton)", "Raw")
-    )
 
     MEASUREMENT_UNITS = (
         ('Bags', 'bags'),
         ('Tonnes', 'tonnes'),
         ('Single units (Retail)', 'units')
     )
-    owner = UserSerializer(read_only=True)
+    owner = serializers.SlugRelatedField(
+        queryset=User.objects.all(),
+        slug_field='email'
+    )
+    produce_category = serializers.SlugRelatedField(
+        queryset=Category.objects.all(),
+        slug_field='name'
+    )
 
     class Meta:
         model = Produce
         fields = (
-            "id", "owner", "produce_name",
-            "produce_category", "stock", "measurement_unit", "date_created"
+            "owner", "produce_name",
+            "produce_category", "stock",
+            "measurement_unit", "price_tag",
+            "product_description",
+            "image_url", "date_created"
         )
-        read_only_fields = ("date_created", "owner")
+        read_only_fields = ("date_created",)
+
+
+class ProduceDetailSerializer(serializers.ModelSerializer):
+    """
+    Serializer uses SlugRelatedField to represent owner field
+    The Serializer display as:
+       {
+           owner: <email>,
+           produce_name: <name>,
+           stock: <Int>,
+           measurement_unit: <unit>,
+           price_tag: <price>,
+           product_description: <description of product>,
+           image_url: <link to image address>
+       }
+    """
+
+    owner = serializers.SlugRelatedField(
+        queryset=User.objects.all(),
+        slug_field='email'
+    )
+
+    class Meta:
+        model = Produce
+        fields = (
+            "owner", "produce_name", "stock",
+            "measurement_unit", "price_tag",
+            "product_description",
+            "image_url"
+        )
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    """
+    Serializer uses nested relationship and serializes as
+       {
+           name:<category_name>
+           products: {
+                owner: <email>,
+                produce_name: <name>,
+                stock: <Int>,
+                measurement_unit: <unit>,
+                price_tag: <price>,
+                product_description: <description of product>,
+                image_url: <link to image address>
+            }
+       }
+    """
+    produce = ProduceDetailSerializer(many=True)
+
+    class Meta:
+        model = Category
+        fields = ("name", "products")
+
+    def create(self, validated_data):
+        products_data = validated_data.pop('products')
+        self.instance = Category.objects.create(**validated_data)
+        for product_data in products_data:
+            Produce.objects.create(
+                produce_category=self.instance,
+                **product_data)
+        return self.instance

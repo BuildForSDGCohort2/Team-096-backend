@@ -57,6 +57,11 @@ class Category(models.Model):
     class Meta:
         verbose_name = "category"
         verbose_name_plural = "categories"
+        constraints = [
+            models.UniqueConstraint(
+                fields=['name', 'slug'],
+                name='name_slug_unique')
+        ]
 
     def __str__(self):
         return self.name
@@ -94,7 +99,8 @@ class Produce(models.Model):
     measurement_unit = models.CharField(max_length=25, default="bags",
                                         choices=MEASUREMENT_UNITS)
     owner = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+        settings.AUTH_USER_MODEL,
+        related_name="produces", on_delete=models.CASCADE)
     price_tag = models.DecimalField(
         max_digits=10, default=0.00, decimal_places=2)
     date_created = models.DateTimeField(auto_now_add=True)
@@ -127,7 +133,11 @@ class Order(models.Model):
     transaction_date = models.DateTimeField(auto_now_add=True)
     update_transaction_date = models.DateTimeField(auto_now=True)
     paid = models.BooleanField(default=False)
-    consumer = models.ForeignKey(User, on_delete=models.CASCADE)
+    consumer = models.ForeignKey(
+        User,
+        related_name="orders",
+        on_delete=models.CASCADE
+    )
     order_status = models.CharField(max_length=26, default="pending")
 
     def __str__(self):
