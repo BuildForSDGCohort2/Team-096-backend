@@ -1,5 +1,4 @@
 __pycache__/
-migrations/
 *.pyc
 *.sqlite3
 *.env
@@ -7,3 +6,10 @@ migrations/
 *.project
 .vscode
 .env
+db.sqlite3
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+*.credentials
