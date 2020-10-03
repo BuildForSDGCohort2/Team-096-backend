@@ -56,7 +56,7 @@ class ProduceSerializerTestCase(TestCase):
     """ Testing the Category Serializer """
 
     def setUp(self):
-        self.category = Category(name="Fruits")
+        self.category = Category(category_name="Fruits")
         self.category.save()
         self.user = User.objects.create_user(
             email=EMAIL2, password=PASSWORD

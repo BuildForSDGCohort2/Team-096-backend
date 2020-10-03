@@ -1,11 +1,13 @@
 """
 Create views here
 """
-from gricapi.models import User, Produce
+from gricapi.models import User, Produce, Category
 from gricapi.serializers import (
-    UserSerializer, ProduceSerializer
+    UserSerializer, ProduceSerializer, CategoryProduceSerializer
 )
 from rest_framework import viewsets
+from rest_framework.response import Response
+from rest_framework import status
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -35,6 +37,67 @@ class ProduceViewSet(viewsets.ModelViewSet):
     create:
     Create a new produce instance.
 
+    Update:
+    The update produce attributes except date_created and date_modified.
+    Date_modified is updated automatically upon successful serializer
+    validation.
+
+    Destroy:
+    Delete the produce instance.
+    Produce can only be deleted by the owner or staff
+
     """
     queryset = Produce.objects.all()
     serializer_class = ProduceSerializer
+
+    def destroy(self, request, pk=None):  # pylint: disable=unused-argument
+        instance = self.get_object()
+        if instance.owner != request.user:
+            if not (request.user.is_staff):
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ProduceCategoryViewSet(viewsets.ModelViewSet):
+    """
+    retrieve:
+    Return the given category and corresponding produces.
+
+    list:
+    Return a list of all the existing categories.
+
+    create:
+    Create a new category and produce instance.
+
+    Update:
+    The update method is not allowed for this viewSets
+
+    Destroy:
+    Delete the category from list of Categories and change all
+    corresponding products to 'General' category.
+
+    """
+    queryset = Category.objects.all()
+    serializer_class = CategoryProduceSerializer
+
+    # pylint: disable=unused-argument
+    def update(self, request, *args, **kwargs):
+        response = {'message': 'Update function is not offered in this path.'}
+        return Response(response, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    # pylint: disable=unused-argument
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if not (request.user.is_superuser):
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        new_category, created = Category.objects.get_or_create(
+            category_name="General")
+        if created:
+            pass
+        products = Produce.objects.filter(produce_category=instance)
+        for product in products:
+            product.produce_category = new_category
+            product.save()
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)

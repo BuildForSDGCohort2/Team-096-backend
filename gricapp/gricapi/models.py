@@ -51,31 +51,32 @@ class Profile(models.Model):
 
 class Category(models.Model):
     """ Category of produce """
-    name = models.CharField(max_length=200, db_index=True)
-    slug = models.SlugField(max_length=200, db_index=True, unique=True)
+    category_name = models.CharField(
+        max_length=200, db_index=True, default="General")
+    slug = models.SlugField(max_length=200, db_index=True)
 
     class Meta:
         verbose_name = "category"
         verbose_name_plural = "categories"
         constraints = [
             models.UniqueConstraint(
-                fields=['name', 'slug'],
+                fields=['category_name', 'slug'],
                 name='name_slug_unique')
         ]
 
     def __str__(self):
-        return self.name
+        return self.category_name
 
     # pylint: disable=arguments-differ,signature-differs
     def save(self, *args, **kwargs):
         super(Category, self).save(*args, **kwargs)
         if not self.slug:
             strftime = "".join(str(timezone.now()).split("."))
-            new_string = "%s-cat-%s" % (self.name, strftime[11:-3])
+            new_string = "%s-cat-%s" % (self.category_name, strftime[11:-3])
             self.slug = slugify(new_string)
         elif "cat" not in self.slug:
             strftime = "".join(str(timezone.now()).split("."))
-            new_string = "%s-cat-%s" % (self.name, strftime[11:-3])
+            new_string = "%s-cat-%s" % (self.category_name, strftime[11:-3])
             self.slug = slugify(new_string)
 
 
@@ -109,7 +110,7 @@ class Produce(models.Model):
     product_description = models.TextField(blank=True, null=True)
 
     def get_absolute_url(self):
-        return reverse('api:produce-detail', args=[str(self.id)])
+        return reverse('api:products-detail', args=[str(self.id)])
 
     def __str__(self):
         """Return a human readable representation of the model instance."""

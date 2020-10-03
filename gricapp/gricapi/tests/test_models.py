@@ -28,7 +28,7 @@ class ProduceTestCase(TestCase):
     def setUp(self):
         """ Define test client and other test variables"""
         self.user = User.objects.create(email="herd@example.com")
-        self.category = Category.objects.create(name="Fruits")
+        self.category = Category.objects.create(category_name="Fruits")
         self.produce = Produce.objects.create(
             produce_name="Orange",
             produce_category=self.category,
@@ -88,7 +88,7 @@ class ProduceSaveTest(TestCase):
 
     def setUp(self):
         self.produce_name = "Berry"
-        self.category = Category.objects.create(name="Fruits")
+        self.category = Category.objects.create(category_name="Fruits")
         self.owner = User.objects.create(email=EMAIL, password=PASSWORD)
         self.id = 3
 
@@ -209,18 +209,19 @@ class UserModelTestCase(TestCase):
 class CategoryTest(TestCase):
 
     def test_category_return_strings(self):
-        category = Category.objects.create(name="Vegetables")
+        category = Category.objects.create(category_name="Vegetables")
         self.assertEqual(str(category), "Vegetables")
 
     def test_category_slug_autoset(self):
-        category = Category.objects.create(name="Fruits")
+        category = Category.objects.create(category_name="Fruits")
         self.assertIsNotNone(category.slug)
         category.slug = "fruityso--009"
         category.save()
         self.assertNotEqual(category.slug, "fruityso--009")
 
     def test_category_slug_resets(self):
-        category = Category.objects.create(name="Minerals", slug="miney-00")
+        category = Category.objects.create(
+            category_name="Minerals", slug="miney-00")
         self.assertNotEqual(category.slug, "miney-00")
 
 
@@ -239,7 +240,7 @@ class OrderItemTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(email=EMAIL2, password=PASSWORD)
         self.order = Order.objects.create(consumer=self.user)
-        self.category = Category.objects.create(name="Fruits")
+        self.category = Category.objects.create(category_name="Fruits")
         self.produce = Produce.objects.create(
             produce_name="Blueberry",
             produce_category=self.category,
