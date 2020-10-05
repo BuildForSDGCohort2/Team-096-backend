@@ -1,7 +1,9 @@
 """ Serializers """
 
 from rest_framework import serializers
-from .models import User, Profile, Produce, Category
+from .models import (
+    User, Profile, Produce, Category, Order, OrderItem
+)
 from django.utils import timezone
 
 
@@ -193,3 +195,86 @@ class CategoryProduceSerializer(serializers.ModelSerializer):
                 produce_category=self.instance,
                 **product_data)
         return self.instance
+
+
+class ItemSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = OrderItem
+        fields = ('item_id', 'produce', 'quantity_ordered')
+        extra_kwargs = {
+            'item_id': {
+                'read_only': True,
+                'required': True
+            }
+        }
+
+
+class ItemListSerializer(serializers.ModelSerializer):
+
+    produce = serializers.SlugRelatedField(
+        slug_field='produce_name',
+        read_only=True
+    )
+
+    class Meta:
+        model = OrderItem
+        fields = (
+            'item_id', 'produce', 'quantity_ordered',
+            'price', 'status')
+
+
+class OrderCreateSerializer(serializers.ModelSerializer):
+    consumer = serializers.SlugRelatedField(
+        queryset=User.objects.all(),
+        slug_field='email'
+    )
+    items = ItemSerializer(many=True, required=False)
+
+    class Meta:
+        model = Order
+        fields = (
+            'id', 'consumer', 'items'
+        )
+
+    def create(self, validated_data):
+        items = validated_data.pop('items', False)
+        instance = Order.objects.create(**validated_data)
+        if items:
+            for item in items:
+                OrderItem.objects.create(
+                    order=instance,
+                    **item
+                )
+        return instance
+
+    def update(self, instance, validated_data):
+        items = validated_data.pop('items', None)
+        new_date = serializers.DateTimeField(
+            default=serializers.CreateOnlyDefault(timezone.now)
+        )
+        instance.update_transaction_date = new_date
+        instance.save()
+
+        if items is not None:
+            instance.items.all().delete()
+            for item in items:
+                instance.items.create(**item)
+
+        return super().update(instance, validated_data)
+
+
+class OrderListSerializer(serializers.ModelSerializer):
+    consumer = serializers.SlugRelatedField(
+        queryset=User.objects.all(),
+        slug_field='email'
+    )
+
+    items = ItemListSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Order
+        fields = (
+            "id", "consumer", 'transaction_date', "update_transaction_date",
+            'paid', 'total_cost', 'order_status', "items"
+        )

@@ -228,11 +228,28 @@ class CategoryTest(TestCase):
 class OrderTest(TestCase):
 
     def setUp(self):
-        self.user = User.objects.create_user(email=EMAIL2, password=PASSWORD)
+        self.user = User.objects.create_user(
+            email=EMAIL2, password=PASSWORD)
+        self.order = Order.objects.create(consumer=self.user)
+        self.category = Category.objects.create(category_name="Fruits")
+        self.produce = Produce.objects.create(
+            produce_name="Orange-K",
+            produce_category=self.category,
+            owner=self.user
+        )
 
     def test_order_return_string(self):
         order = Order.objects.create(consumer=self.user)
-        self.assertEqual(str(order), str(order.order_id))
+        self.assertEqual(str(order), str(order.id))
+
+    def test_order_total_price(self):
+        order_item = OrderItem.objects.create(
+            order=self.order,
+            produce=self.produce,
+            quantity_ordered=15,
+        )
+        self.assertEqual(order_item.price, 15*self.produce.price_tag)
+        self.assertIsNotNone(self.order.total_cost)
 
 
 class OrderItemTest(TestCase):
@@ -247,10 +264,33 @@ class OrderItemTest(TestCase):
             owner=self.user
         )
 
+    def test_create_new_order(self):
+        old_order_count = Order.objects.count()
+        item_count = OrderItem.objects.count()
+        order = Order.objects.create(consumer=self.user)
+        OrderItem.objects.create(order=order,
+                                 produce=self.produce, quantity_ordered=3)
+        self.assertNotEqual(Order.objects.count(), old_order_count)
+        self.assertNotEqual(OrderItem.objects.count(), item_count)
+
     def test_item_id_return_string(self):
         item = OrderItem.objects.create(
             order=self.order,
-            product=self.produce,
+            produce=self.produce,
             quantity_ordered=10
         )
         self.assertEqual(str(item), "Item" + str(item.item_id))
+
+    def test_item_id_is_unique(self):
+        item = OrderItem.objects.create(
+            order=self.order,
+            produce=self.produce,
+            quantity_ordered=10
+        )
+        item2 = OrderItem.objects.create(
+            order=self.order,
+            produce=self.produce,
+            quantity_ordered=10
+        )
+        item2.item_id = item.item_id
+        self.assertRaises(IntegrityError, item2.save())

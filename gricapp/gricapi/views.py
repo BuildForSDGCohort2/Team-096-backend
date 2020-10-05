@@ -1,13 +1,20 @@
 """
 Create views here
 """
-from gricapi.models import User, Produce, Category
+from gricapi.models import User, Produce, Category, Order
 from gricapi.serializers import (
-    UserSerializer, ProduceSerializer, CategoryProduceSerializer
+    UserSerializer, ProduceSerializer, CategoryProduceSerializer,
+    OrderCreateSerializer, OrderListSerializer
 )
-from rest_framework import viewsets
+from rest_framework import viewsets, mixins
 from rest_framework.response import Response
 from rest_framework import status
+
+from gricapi.mixins import (
+    CreateModelMixin, UpdateModelMixin,
+    ListModelMixin, RetrieveModelMixin
+)
+from gricapi.generics import GenericAPIView
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -101,3 +108,32 @@ class ProduceCategoryViewSet(viewsets.ModelViewSet):
             product.save()
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class OrderViewSet(CreateModelMixin,
+                   UpdateModelMixin,
+                   ListModelMixin,
+                   RetrieveModelMixin,
+                   mixins.DestroyModelMixin,
+                   GenericAPIView,
+                   viewsets.GenericViewSet):
+    """
+    retrieve:
+    Return an Order and corresponding items.
+
+    list:
+    Return a list of all orders by the user.
+
+    create:
+    Create a new order.
+
+    Update:
+    Add and item to an order.
+
+    Destroy:
+    Delete an order and corresponding items.
+
+    """
+    queryset = Order.objects.all()
+    read_serializer_class = OrderListSerializer
+    write_serializer_class = OrderCreateSerializer

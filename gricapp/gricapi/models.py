@@ -12,6 +12,11 @@ from django.utils import timezone
 from uuid import uuid4
 
 
+class UUIDModel(models.Model):
+    pkid = models.BigAutoField(primary_key=True, editable=False)
+    id = models.UUIDField(default=uuid4, editable=False, unique=True)
+
+
 class User(AbstractUser):
     username = None
     email = models.EmailField(_('email address'), unique=True)
@@ -129,8 +134,7 @@ class Produce(models.Model):
             self.slug = slugify(new_string)
 
 
-class Order(models.Model):
-    order_id = models.UUIDField(default=uuid4, editable=False)
+class Order(UUIDModel):
     transaction_date = models.DateTimeField(auto_now_add=True)
     update_transaction_date = models.DateTimeField(auto_now=True)
     paid = models.BooleanField(default=False)
@@ -142,24 +146,29 @@ class Order(models.Model):
     order_status = models.CharField(max_length=26, default="pending")
 
     def __str__(self):
-        return "{}".format(self.order_id)
+        return "{}".format(self.id)
+
+    @property
+    def total_cost(self):
+        cost = sum(item.price for item in self.items.all())
+        return cost
 
 
 class OrderItem(models.Model):
+    item_id = models.UUIDField(default=uuid4, editable=False)
     order = models.ForeignKey(
         Order, on_delete=models.CASCADE, related_name="items")
-    product = models.ForeignKey(
+    produce = models.ForeignKey(
         Produce, on_delete=models.CASCADE, related_name="order_items")
     quantity_ordered = models.PositiveIntegerField(default=1)
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    item_order_status = models.CharField(
-        default="shopping cart", max_length=30)
-    item_id = models.UUIDField(default=uuid4, editable=False)
+    status = models.CharField(
+        default="pending", max_length=30)
 
     def __str__(self):
         return "Item{}".format(self.item_id)
 
     # pylint: disable=arguments-differ,signature-differs
     def save(self, *args, **kwargs):
-        self.price = self.quantity_ordered * self.product.price_tag
+        self.price = self.quantity_ordered * self.produce.price_tag
         super(OrderItem, self).save(*args, **kwargs)

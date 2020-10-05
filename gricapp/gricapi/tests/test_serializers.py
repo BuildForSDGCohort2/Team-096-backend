@@ -2,9 +2,10 @@
 
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from gricapi.models import Produce, Category, User
+from gricapi.models import Produce, Category, User, Order, OrderItem
 from gricapi.serializers import (
-    UserSerializer, ProfileSerializer, ProduceSerializer
+    UserSerializer, ProfileSerializer, ProduceSerializer,
+    OrderCreateSerializer, ItemSerializer, ItemListSerializer
 )
 from config.utilities import conf_reader
 from config.settings.base import ROOT_DIR
@@ -86,3 +87,55 @@ class ProduceSerializerTestCase(TestCase):
         self.assertFalse(serializer.is_valid())
         self.assertEqual(set(serializer.errors.keys()),
                          set(['measurement_unit']))
+
+
+class OrderSerializerTestCase(TestCase):
+
+    def setUp(self):
+        self.category = Category(category_name="Fruits")
+        self.category.save()
+        self.user = User.objects.create_user(
+            email=EMAIL2, password=PASSWORD
+        )
+        self.produce = Produce.objects.create(
+            produce_name="orange R",
+            produce_category=self.category,
+            stock=45,
+            price_tag=1500,
+            owner=self.user
+        )
+        self.order = Order.objects.create(consumer=self.user)
+        self.order_item_attributes = {
+            "produce": self.produce,
+            "quantity_ordered": 30,
+            "order": self.order,
+        }
+        self.serializer = OrderCreateSerializer(instance=self.order)
+
+    def test_order_serializer_contains_exact_contents(self):
+        data = self.serializer.data
+        self.assertEqual(data["id"], str(self.order.id))
+        self.assertCountEqual(data.keys(),
+                              ['id', 'consumer', 'items'])
+
+    def test_orderitem_serializer_contains_expected_contents(self):
+        item = OrderItem.objects.create(**self.order_item_attributes)
+        serializer = ItemSerializer(instance=item)
+        data = serializer.data
+
+        self.assertCountEqual(data.keys(),
+                              ['item_id', "produce",
+                               'quantity_ordered'])
+
+        # price should be 2 decimal places
+        data["price"] = 34.298
+        serializer = ItemListSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(set(serializer.errors), set(['price']))
+
+        # quantity ordered should be integer
+        data["quantity_ordered"] = 2.5
+        serializer = ItemSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(set(serializer.errors), set(
+            ['quantity_ordered']))

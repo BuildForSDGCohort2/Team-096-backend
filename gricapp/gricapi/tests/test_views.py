@@ -6,7 +6,7 @@ from rest_framework.test import APITestCase
 from rest_framework.views import status
 
 from gricapi.models import (
-    User, Profile, Produce, Category
+    User, Profile, Produce, Category, Order
 )
 from config.utilities import conf_reader
 from config.settings.base import ROOT_DIR
@@ -323,3 +323,95 @@ class CategoryProduceDetailsAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response = self.client.delete(self.url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+
+class OrderTestCase(APITestCase):
+
+    def setUp(self):
+        self.user = User(email=EMAIL,
+                         password=PASSWORD)
+        self.user.save()
+        self.url = reverse("api:shopping-list")
+        self.category = Category.objects.create(category_name="Vegetables")
+        self.produce = Produce.objects.create(
+            produce_category=self.category,
+            produce_name="Lenscus",
+            stock=50,
+            price_tag=3500,
+            measurement_unit="tonnes",
+            owner=self.user
+
+        )
+        self.produce2 = Produce.objects.create(
+            produce_category=self.category,
+            produce_name="Letus",
+            stock=10,
+            price_tag=300,
+            measurement_unit="tonnes",
+            owner=self.user
+        )
+
+    def test_can_make_a_new_order(self):
+        response = self.client.get(self.url)
+        order = {
+            "consumer": EMAIL,
+        }
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response2 = self.client.post(self.url, data=order, format='json')
+        self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
+        self.assertNotEqual(Order.objects.count(), 0)
+        self.assertEqual(Order.objects.count(), 1)
+
+    def test_add_an_item_and_make_new_order(self):
+        response = self.client.get(self.url)
+
+        new_order = {
+            "consumer": EMAIL,
+            "items": [
+                {
+                    "produce": self.produce.id,
+                    "quantity_ordered": 12,
+                },
+                {
+                    "produce": self.produce2.id,
+                    "quantity_ordered": 200
+                }
+            ]
+
+        }
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response2 = self.client.post(self.url, data=new_order, format='json')
+        self.assertEqual(response2.status_code, status.HTTP_201_CREATED)
+        self.assertIsNotNone(response2.data["items"][0]["item_id"])
+
+    def test_update_order_items(self):
+        self.test_add_an_item_and_make_new_order()
+        order = Order.objects.first()
+        url = reverse('api:shopping-detail', kwargs={"pk": (order.pkid)})
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        update_order = {
+            "consumer": EMAIL,
+            "items": [
+                {
+                    "produce": self.produce.id,
+                    "quantity_ordered": 131,
+                },
+                {
+                    "produce": self.produce2.id,
+                    "quantity_ordered": 20,
+                }
+            ]
+
+        }
+
+        response = self.client.put(url, data=update_order, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        order.refresh_from_db()
+        self.assertEqual(response.data["total_cost"], order.total_cost)
+        print(response.data)
+        self.assertEqual(order.items.count(), 2)
+        self.assertEqual(len(response.data["items"]), order.items.count())
