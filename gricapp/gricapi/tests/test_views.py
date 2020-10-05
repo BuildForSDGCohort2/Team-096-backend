@@ -412,6 +412,5 @@ class OrderTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         order.refresh_from_db()
         self.assertEqual(response.data["total_cost"], order.total_cost)
-        print(response.data)
         self.assertEqual(order.items.count(), 2)
         self.assertEqual(len(response.data["items"]), order.items.count())

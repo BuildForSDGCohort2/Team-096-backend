@@ -81,7 +81,8 @@ class ProduceTestCase(TestCase):
     def test_get_absolute_url(self):
         produce = Produce.objects.get(id=1)
         # This will also fail if the urlconf is not defined.
-        self.assertEqual(produce.get_absolute_url(), '/api/catalog/produce/1/')
+        self.assertEqual(produce.get_absolute_url(),
+                         '/api/v1/catalog/produce/1/')
 
 
 class ProduceSaveTest(TestCase):

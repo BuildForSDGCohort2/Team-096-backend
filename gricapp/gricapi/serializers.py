@@ -202,12 +202,6 @@ class ItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
         fields = ('item_id', 'produce', 'quantity_ordered')
-        extra_kwargs = {
-            'item_id': {
-                'read_only': True,
-                'required': True
-            }
-        }
 
 
 class ItemListSerializer(serializers.ModelSerializer):
