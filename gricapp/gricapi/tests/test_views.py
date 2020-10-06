@@ -6,8 +6,9 @@ from rest_framework.test import APITestCase
 from rest_framework.views import status
 
 from gricapi.models import (
-    User, Profile, Produce, Category, Order
+    User, Profile, Produce, Category, Order, OrderItem
 )
+from django.contrib.auth.models import Group
 from config.utilities import conf_reader
 from config.settings.base import ROOT_DIR
 
@@ -22,6 +23,10 @@ class UserListCreateAPIView(APITestCase):
 
     def setUp(self):
         self.url = reverse('api:user-list')
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
 
     def test_create_user(self):
         self.assertEqual(
@@ -45,8 +50,9 @@ class UserListCreateAPIView(APITestCase):
         self.assertEqual(profile.user, user)
 
     def test_get_user_list(self):
-        user = User(email=EMAIL, password=PASSWORD)
+        user = User(groups=self.group, email=EMAIL, password=PASSWORD)
         user.save()
+        self.client.force_authenticate(user=user)
         response = self.client.get(self.url)
         response_json = response.json()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -59,9 +65,14 @@ class UserListCreateAPIView(APITestCase):
 
 class UserDetailsAPIView(APITestCase):
     def setUp(self):
-        self.user = User(email=EMAIL,
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
+        self.user = User(groups=self.group, email=EMAIL,
                          password=PASSWORD)
         self.user.save()
+        self.client.force_authenticate(user=self.user)
         self.profile = Profile.objects.create(user=self.user)
         self.url = reverse("api:user-detail", kwargs={'pk': self.user.id})
 
@@ -91,11 +102,14 @@ class UserDetailsAPIView(APITestCase):
         self.assertEqual(response2.status_code, status.HTTP_200_OK)
         data2 = response2.json()
         data2["last_name"] = "Grace"
+        data2["first_name"] = "Loveth"
         response = self.client.put(self.url, data2, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         self.user.refresh_from_db()
         self.assertEqual(self.user.last_name, data2["last_name"])
+        self.assertEqual(self.user.get_short_name(), data2['first_name'])
+        self.assertEqual(self.user.get_full_name(), "Loveth Grace")
 
     def test_update_a_profile(self):
         response = self.client.get(self.url)
@@ -111,12 +125,35 @@ class UserDetailsAPIView(APITestCase):
         self.assertEqual(self.profile.phone_number,
                          data['profile']['phone_number'])
 
+    def test_delete_a_user(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response2 = self.client.delete(self.url)
+        self.assertEqual(response2.status_code, status.HTTP_403_FORBIDDEN)
+        self.client.logout()
+        group, created = Group.objects.get_or_create(name="admin")
+        if created:
+            pass
+        self.user.is_staff = True
+        self.user.groups = group
+        self.user.save()
+        self.client.force_authenticate(self.user)
+        response2 = self.client.delete(self.url)
+        self.assertEqual(response2.status_code,
+                         status.HTTP_405_METHOD_NOT_ALLOWED)
+
 
 class ProduceListCreateAPIView(APITestCase):
     def setUp(self):
-        self.user = User(email=EMAIL,
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
+        self.user = User(groups=self.group, email=EMAIL,
                          password=PASSWORD)
         self.user.save()
+        self.client.force_authenticate(user=self.user)
         self.url = reverse("api:products-list")
         self.category = Category.objects.create(category_name="Vegetables")
         self.produce = Produce.objects.create(
@@ -199,11 +236,16 @@ class ProduceListCreateAPIView(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_delete_a_product_as_staff(self):
+        try:
+            group = Group.objects.get(name='admin')
+        except Group.DoesNotExist:
+            group = Group.objects.create(name='admin')
         url = reverse('api:products-detail', kwargs={"pk": 1})
-        user = User(email=EMAIL2, password=PASSWORD)
+        user = User(groups=group, email=EMAIL2, password=PASSWORD)
         user.is_staff = True
         user.save()
         user.refresh_from_db()
+        self.client.logout()
         self.client.force_authenticate(user=user)
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -211,20 +253,26 @@ class ProduceListCreateAPIView(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_delete_a_product_failed(self):
+        self.client.logout()
         url = reverse('api:products-detail', kwargs={"pk": 1})
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class CategoryListCreate(APITestCase):
 
     def setUp(self):
-
-        self.owner = User.objects.create_user(email=EMAIL, password=PASSWORD)
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
+        self.owner = User.objects.create_user(
+            groups=self.group, email=EMAIL, password=PASSWORD)
         self.data = {"category_name": "Fruits"}
         self.url = reverse("api:produce-category-list")
+        self.client.force_authenticate(user=self.owner)
 
     def test_category_list(self):
         category = Category.objects.create(category_name="Fruits")
@@ -275,7 +323,12 @@ class CategoryProduceDetailsAPITest(APITestCase):
     """
 
     def setUp(self):
-        self.owner = User.objects.create_user(email=EMAIL, password=PASSWORD)
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
+        self.owner = User.objects.create_user(
+            groups=self.group, email=EMAIL, password=PASSWORD)
         self.category = Category.objects.create(category_name="Fruits")
         self.produce = Produce.objects.create(
             produce_category=self.category, produce_name="Berry", stock=2,
@@ -283,6 +336,7 @@ class CategoryProduceDetailsAPITest(APITestCase):
         self.produce1 = Produce.objects.create(
             produce_category=self.category, produce_name="Berry2345", stock=90,
             price_tag=200, owner=self.owner)
+        self.client.force_authenticate(user=self.owner)
         self.url = reverse("api:produce-category-detail", kwargs={"pk": 1})
 
     def test_get_produce_details_for_each_category(self):
@@ -313,14 +367,22 @@ class CategoryProduceDetailsAPITest(APITestCase):
         response = self.client.delete(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_delete_a_product_as_admin(self):
-        user = User(email=EMAIL2, password=PASSWORD)
-        user.is_superuser = True
+    def test_delete_a_product_only_as_superuser(self):
+        try:
+            group = Group.objects.get(name='admin')
+        except Group.DoesNotExist:
+            group = Group.objects.create(name='admin')
+        user = User(groups=group, email=EMAIL2, password=PASSWORD)
+        user.is_staff = True
         user.save()
         user.refresh_from_db()
         self.client.force_authenticate(user=user)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.delete(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        user.is_superuser = True
+        user.save()
         response = self.client.delete(self.url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -328,9 +390,15 @@ class CategoryProduceDetailsAPITest(APITestCase):
 class OrderTestCase(APITestCase):
 
     def setUp(self):
-        self.user = User(email=EMAIL,
-                         password=PASSWORD)
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
+        self.user = User(
+            groups=self.group, email=EMAIL,
+            password=PASSWORD)
         self.user.save()
+        self.client.force_authenticate(user=self.user)
         self.url = reverse("api:shopping-list")
         self.category = Category.objects.create(category_name="Vegetables")
         self.produce = Produce.objects.create(
@@ -414,3 +482,17 @@ class OrderTestCase(APITestCase):
         self.assertEqual(response.data["total_cost"], order.total_cost)
         self.assertEqual(order.items.count(), 2)
         self.assertEqual(len(response.data["items"]), order.items.count())
+
+    def test_delete_an_order(self):
+        self.test_add_an_item_and_make_new_order()
+        order = Order.objects.first()
+        url = reverse('api:shopping-detail', kwargs={"pk": (order.pkid)})
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(OrderItem.objects.filter(order=order).exists())
+
+        response2 = self.client.delete(url)
+        self.assertEqual(response2.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Order.objects.count(), 0)
+        self.assertFalse(OrderItem.objects.filter(order=order).exists())

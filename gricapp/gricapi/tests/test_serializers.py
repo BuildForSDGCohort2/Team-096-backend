@@ -2,6 +2,7 @@
 
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from gricapi.models import Produce, Category, User, Order, OrderItem
 from gricapi.serializers import (
     UserSerializer, ProfileSerializer, ProduceSerializer,
@@ -19,8 +20,13 @@ PASSWORD = conf_reader.get_value(credentials_file, 'LOGIN_PASSWORD')
 class UserSerializerTestCase(TestCase):
 
     def setUp(self):
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
         self.user_attributes = {
             "id": 1,
+            "groups": self.group,
             "email": EMAIL2,
             "password": PASSWORD,
             "first_name": "Victory",
@@ -57,10 +63,14 @@ class ProduceSerializerTestCase(TestCase):
     """ Testing the Category Serializer """
 
     def setUp(self):
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
         self.category = Category(category_name="Fruits")
         self.category.save()
         self.user = User.objects.create_user(
-            email=EMAIL2, password=PASSWORD
+            groups=self.group, email=EMAIL2, password=PASSWORD
         )
         self.produce_attributes = {
             "produce_name": "orange R",
@@ -92,10 +102,14 @@ class ProduceSerializerTestCase(TestCase):
 class OrderSerializerTestCase(TestCase):
 
     def setUp(self):
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
         self.category = Category(category_name="Fruits")
         self.category.save()
         self.user = User.objects.create_user(
-            email=EMAIL2, password=PASSWORD
+            groups=self.group, email=EMAIL2, password=PASSWORD
         )
         self.produce = Produce.objects.create(
             produce_name="orange R",

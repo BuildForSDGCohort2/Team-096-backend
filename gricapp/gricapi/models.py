@@ -10,6 +10,7 @@ from .managers import CustomUserManager
 from django.template.defaultfilters import slugify
 from django.utils import timezone
 from uuid import uuid4
+from django.contrib.auth.models import Group
 
 
 class UUIDModel(models.Model):
@@ -18,6 +19,8 @@ class UUIDModel(models.Model):
 
 
 class User(AbstractUser):
+    groups = models.ForeignKey(
+        Group, on_delete=models.CASCADE)
     username = None
     email = models.EmailField(_('email address'), unique=True)
 
@@ -27,6 +30,12 @@ class User(AbstractUser):
     date_joined = models.DateTimeField(auto_now_add=True)
 
     objects = CustomUserManager()
+
+    def get_full_name(self):
+        return '%s %s' % (self.first_name, self.last_name)
+
+    def get_short_name(self):
+        return self.first_name
 
     def __str__(self):
         if self.first_name != "":

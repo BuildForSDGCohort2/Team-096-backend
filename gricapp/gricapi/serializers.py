@@ -2,7 +2,7 @@
 
 from rest_framework import serializers
 from .models import (
-    User, Profile, Produce, Category, Order, OrderItem
+    User, Group, Profile, Produce, Category, Order, OrderItem
 )
 from django.utils import timezone
 
@@ -40,7 +40,12 @@ class UserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         profile_data = validated_data.pop('profile')
-        self.instance = User.objects.create_user(**validated_data)
+        try:
+            group = Group.objects.get(name="anonymous")
+        except Group.DoesNotExist:
+            group = Group.objects.create(name="anonymous")
+        self.instance = User.objects.create_user(
+            groups=group, **validated_data)
         Profile.objects.create(user=self.instance, **profile_data)
         return self.instance
 

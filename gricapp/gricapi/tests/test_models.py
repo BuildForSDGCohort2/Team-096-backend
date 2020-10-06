@@ -8,6 +8,7 @@ from gricapi.models import (
     Produce, User, Profile, Category, Order, OrderItem
 )
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from config.utilities import conf_reader
 from config.settings.base import ROOT_DIR
 
@@ -27,7 +28,12 @@ class ProduceTestCase(TestCase):
 
     def setUp(self):
         """ Define test client and other test variables"""
-        self.user = User.objects.create(email="herd@example.com")
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
+        self.user = User.objects.create(
+            groups=self.group, email="herd@example.com")
         self.category = Category.objects.create(category_name="Fruits")
         self.produce = Produce.objects.create(
             produce_name="Orange",
@@ -88,9 +94,14 @@ class ProduceTestCase(TestCase):
 class ProduceSaveTest(TestCase):
 
     def setUp(self):
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
         self.produce_name = "Berry"
         self.category = Category.objects.create(category_name="Fruits")
-        self.owner = User.objects.create(email=EMAIL, password=PASSWORD)
+        self.owner = User.objects.create(
+            groups=self.group, email=EMAIL, password=PASSWORD)
         self.id = 3
 
     def test_id_autoset(self):
@@ -144,11 +155,15 @@ class UserModelTestCase(TestCase):
     """ This class defines the test suite for User model """
 
     def setUp(self):
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
         self.User = get_user_model()
 
     def test_create_user(self):
         user = self.User.objects.create_user(
-            email=EMAIL, password=PASSWORD)
+            groups=self.group, email=EMAIL, password=PASSWORD)
         self.assertEqual(user.email, 'hallo@test.com')
         self.assertTrue(user.is_active)
         self.assertFalse(user.is_staff)
@@ -162,8 +177,12 @@ class UserModelTestCase(TestCase):
             self.User.objects.create_user(email='', password=PASSWORD)
 
     def test_create_superuser(self):
+        try:
+            group = Group.objects.get(name='admin')
+        except Group.DoesNotExist:
+            group = Group.objects.create(name='admin')
         admin_user = self.User.objects.create_superuser(
-            EMAIL, PASSWORD)
+            EMAIL, PASSWORD, groups=group)
         self.assertEqual(admin_user.email, 'hallo@test.com')
         self.assertTrue(admin_user.is_active)
         self.assertTrue(admin_user.is_staff)
@@ -176,9 +195,10 @@ class UserModelTestCase(TestCase):
     def test_user_string_returns_first_name_when_not_empty(self):
         """ Test user __str__ returns the first name of user """
         user = self.User.objects.create_user(
-            email=EMAIL, password=PASSWORD)
+            groups=self.group, email=EMAIL, password=PASSWORD)
         self.assertEqual(str(user), "hallo@test.com")
         user2 = self.User.objects.create_user(
+            groups=self.group,
             email=EMAIL2,
             password=PASSWORD, first_name="Victory"
         )
@@ -188,7 +208,7 @@ class UserModelTestCase(TestCase):
     def test_has_valid_profile_string(self):
         """ Test user has profile string """
         user = self.User.objects.create_user(
-            email=EMAIL, password=PASSWORD)
+            groups=self.group, email=EMAIL, password=PASSWORD)
         profile = Profile.objects.create(user=user)
         self.assertEqual(str(profile), "hallo@test.com")
         profile.is_farmer = True
@@ -197,7 +217,10 @@ class UserModelTestCase(TestCase):
         self.assertEqual(str(profile), "hallo@test.com is a farmer")
 
         user2 = self.User.objects.create_user(
-            email=EMAIL2, password=PASSWORD, first_name="victory")
+            groups=self.group,
+            email=EMAIL2, password=PASSWORD,
+            first_name="victory"
+        )
         profile2 = Profile.objects.create(user=user2)
         self.assertEqual(str(profile2), "Victory")
         self.assertNotEqual(str(profile2), "hallo2@test.com")
@@ -229,8 +252,12 @@ class CategoryTest(TestCase):
 class OrderTest(TestCase):
 
     def setUp(self):
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
         self.user = User.objects.create_user(
-            email=EMAIL2, password=PASSWORD)
+            groups=self.group, email=EMAIL2, password=PASSWORD)
         self.order = Order.objects.create(consumer=self.user)
         self.category = Category.objects.create(category_name="Fruits")
         self.produce = Produce.objects.create(
@@ -256,7 +283,12 @@ class OrderTest(TestCase):
 class OrderItemTest(TestCase):
 
     def setUp(self):
-        self.user = User.objects.create_user(email=EMAIL2, password=PASSWORD)
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
+        self.user = User.objects.create_user(groups=self.group,
+                                             email=EMAIL2, password=PASSWORD)
         self.order = Order.objects.create(consumer=self.user)
         self.category = Category.objects.create(category_name="Fruits")
         self.produce = Produce.objects.create(
