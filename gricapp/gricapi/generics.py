@@ -18,7 +18,7 @@ class GenericAPIView(generics.GenericAPIView):
         serializations depending on the incoming request.
         (Eg. admins get full serialization, others get basic serialization)
         """
-        assert (
+        assert (  # nosec
             self.serializer_class is not None or
             getattr(self, 'read_serializer_class', None) is not None
         ), (

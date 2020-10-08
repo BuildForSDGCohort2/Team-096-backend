@@ -238,6 +238,7 @@ class OrderCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         items = validated_data.pop('items', False)
+        instance = self.instance
         instance = Order.objects.create(**validated_data)
         if items:
             for item in items:

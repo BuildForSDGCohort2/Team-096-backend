@@ -50,7 +50,7 @@ class UserViewSet(viewsets.ModelViewSet):
             permission_classes = [IsAdminUser]
         return [permission() for permission in permission_classes]
 
-    # pylint: disable=unused-argument
+    # pylint: disable=unused-argument,no-self-use
     def destroy(self, request, *args, **kwargs):
         response = {'message': 'Delete function is not offered in this path.'}
         return Response(response, status=status.HTTP_405_METHOD_NOT_ALLOWED)
@@ -130,7 +130,7 @@ class ProduceCategoryViewSet(viewsets.ModelViewSet):
             permission_classes = [IsAdminUser]
         return [permission() for permission in permission_classes]
 
-    # pylint: disable=unused-argument
+    # pylint: disable=unused-argument,no-self-use
     def update(self, request, *args, **kwargs):
         response = {'message': 'Update function is not offered in this path.'}
         return Response(response, status=status.HTTP_405_METHOD_NOT_ALLOWED)
