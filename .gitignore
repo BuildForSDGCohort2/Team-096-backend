@@ -13,3 +13,5 @@ htmlcov/
 coverage.xml
 *.cover
 *.credentials
+gricapp/config/settings/local.py
+login.credentials

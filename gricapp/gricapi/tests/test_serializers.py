@@ -2,9 +2,11 @@
 
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from gricapi.models import Produce, Category, User
+from django.contrib.auth.models import Group
+from gricapi.models import Produce, Category, User, Order, OrderItem
 from gricapi.serializers import (
-    UserSerializer, ProfileSerializer, ProduceSerializer
+    UserSerializer, ProfileSerializer, ProduceSerializer,
+    OrderCreateSerializer, ItemSerializer, ItemListSerializer
 )
 from config.utilities import conf_reader
 from config.settings.base import ROOT_DIR
@@ -18,8 +20,13 @@ PASSWORD = conf_reader.get_value(credentials_file, 'LOGIN_PASSWORD')
 class UserSerializerTestCase(TestCase):
 
     def setUp(self):
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
         self.user_attributes = {
             "id": 1,
+            "groups": self.group,
             "email": EMAIL2,
             "password": PASSWORD,
             "first_name": "Victory",
@@ -52,24 +59,97 @@ class UserSerializerTestCase(TestCase):
             detail_serializer.data["profile"]["gender"], "F")
 
 
-class CategorySerializerTestCase(TestCase):
+class ProduceSerializerTestCase(TestCase):
     """ Testing the Category Serializer """
 
     def setUp(self):
-        self.category = Category(name="Fruits")
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
+        self.category = Category(category_name="Fruits")
         self.category.save()
         self.user = User.objects.create_user(
-            email=EMAIL2, password=PASSWORD
+            groups=self.group, email=EMAIL2, password=PASSWORD
         )
-
-    def test_produce_contains_exact_content(self):
-        produce_attributes = {
+        self.produce_attributes = {
             "produce_name": "orange R",
             "produce_category": self.category,
             "stock": 30,
-            "owner": self.user
+            "measurement_unit": "bags",
+            "owner": self.user,
+            "price_tag": 12
         }
-        produce = Produce.objects.create(**produce_attributes)
-        serializer = ProduceSerializer(instance=produce)
-        self.assertEqual(serializer.data["owner"]
-                         ["email"], EMAIL2)
+        self.produce = Produce.objects.create(**self.produce_attributes)
+
+    def test_produce_contains_exact_content(self):
+        serializer = ProduceSerializer(instance=self.produce)
+        self.assertEqual(serializer.data["owner"], self.produce.owner.email)
+        self.assertEqual(serializer.data['stock'], self.produce.stock)
+
+    def test_measurement_units_must_be_in_choices(self):
+        self.produce_attributes['measurement_unit'] = 'single'
+        serializer = ProduceSerializer(
+            instance=self.produce,
+            data=self.produce_attributes
+        )
+
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(set(serializer.errors.keys()),
+                         set(['measurement_unit']))
+
+
+class OrderSerializerTestCase(TestCase):
+
+    def setUp(self):
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
+        self.category = Category(category_name="Fruits")
+        self.category.save()
+        self.user = User.objects.create_user(
+            groups=self.group, email=EMAIL2, password=PASSWORD
+        )
+        self.produce = Produce.objects.create(
+            produce_name="orange R",
+            produce_category=self.category,
+            stock=45,
+            price_tag=1500,
+            owner=self.user
+        )
+        self.order = Order.objects.create(consumer=self.user)
+        self.order_item_attributes = {
+            "produce": self.produce,
+            "quantity_ordered": 30,
+            "order": self.order,
+        }
+        self.serializer = OrderCreateSerializer(instance=self.order)
+
+    def test_order_serializer_contains_exact_contents(self):
+        data = self.serializer.data
+        self.assertEqual(data["id"], str(self.order.id))
+        self.assertCountEqual(data.keys(),
+                              ['id', 'consumer', 'items'])
+
+    def test_orderitem_serializer_contains_expected_contents(self):
+        item = OrderItem.objects.create(**self.order_item_attributes)
+        serializer = ItemSerializer(instance=item)
+        data = serializer.data
+
+        self.assertCountEqual(data.keys(),
+                              ['item_id', "produce",
+                               'quantity_ordered'])
+
+        # price should be 2 decimal places
+        data["price"] = 34.298
+        serializer = ItemListSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(set(serializer.errors), set(['price']))
+
+        # quantity ordered should be integer
+        data["quantity_ordered"] = 2.5
+        serializer = ItemSerializer(data=data)
+        self.assertFalse(serializer.is_valid())
+        self.assertEqual(set(serializer.errors), set(
+            ['quantity_ordered']))

@@ -8,6 +8,7 @@ from gricapi.models import (
     Produce, User, Profile, Category, Order, OrderItem
 )
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from config.utilities import conf_reader
 from config.settings.base import ROOT_DIR
 
@@ -27,8 +28,13 @@ class ProduceTestCase(TestCase):
 
     def setUp(self):
         """ Define test client and other test variables"""
-        self.user = User.objects.create(email="herd@example.com")
-        self.category = Category.objects.create(name="Fruits")
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
+        self.user = User.objects.create(
+            groups=self.group, email="herd@example.com")
+        self.category = Category.objects.create(category_name="Fruits")
         self.produce = Produce.objects.create(
             produce_name="Orange",
             produce_category=self.category,
@@ -81,15 +87,21 @@ class ProduceTestCase(TestCase):
     def test_get_absolute_url(self):
         produce = Produce.objects.get(id=1)
         # This will also fail if the urlconf is not defined.
-        self.assertEqual(produce.get_absolute_url(), '/api/catalog/produce/1/')
+        self.assertEqual(produce.get_absolute_url(),
+                         '/api/v1/catalog/produce/1/')
 
 
 class ProduceSaveTest(TestCase):
 
     def setUp(self):
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
         self.produce_name = "Berry"
-        self.category = Category.objects.create(name="Fruits")
-        self.owner = User.objects.create(email=EMAIL, password=PASSWORD)
+        self.category = Category.objects.create(category_name="Fruits")
+        self.owner = User.objects.create(
+            groups=self.group, email=EMAIL, password=PASSWORD)
         self.id = 3
 
     def test_id_autoset(self):
@@ -143,11 +155,15 @@ class UserModelTestCase(TestCase):
     """ This class defines the test suite for User model """
 
     def setUp(self):
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
         self.User = get_user_model()
 
     def test_create_user(self):
         user = self.User.objects.create_user(
-            email=EMAIL, password=PASSWORD)
+            groups=self.group, email=EMAIL, password=PASSWORD)
         self.assertEqual(user.email, 'hallo@test.com')
         self.assertTrue(user.is_active)
         self.assertFalse(user.is_staff)
@@ -161,8 +177,12 @@ class UserModelTestCase(TestCase):
             self.User.objects.create_user(email='', password=PASSWORD)
 
     def test_create_superuser(self):
+        try:
+            group = Group.objects.get(name='admin')
+        except Group.DoesNotExist:
+            group = Group.objects.create(name='admin')
         admin_user = self.User.objects.create_superuser(
-            EMAIL, PASSWORD)
+            EMAIL, PASSWORD, groups=group)
         self.assertEqual(admin_user.email, 'hallo@test.com')
         self.assertTrue(admin_user.is_active)
         self.assertTrue(admin_user.is_staff)
@@ -175,9 +195,10 @@ class UserModelTestCase(TestCase):
     def test_user_string_returns_first_name_when_not_empty(self):
         """ Test user __str__ returns the first name of user """
         user = self.User.objects.create_user(
-            email=EMAIL, password=PASSWORD)
+            groups=self.group, email=EMAIL, password=PASSWORD)
         self.assertEqual(str(user), "hallo@test.com")
         user2 = self.User.objects.create_user(
+            groups=self.group,
             email=EMAIL2,
             password=PASSWORD, first_name="Victory"
         )
@@ -187,7 +208,7 @@ class UserModelTestCase(TestCase):
     def test_has_valid_profile_string(self):
         """ Test user has profile string """
         user = self.User.objects.create_user(
-            email=EMAIL, password=PASSWORD)
+            groups=self.group, email=EMAIL, password=PASSWORD)
         profile = Profile.objects.create(user=user)
         self.assertEqual(str(profile), "hallo@test.com")
         profile.is_farmer = True
@@ -196,7 +217,10 @@ class UserModelTestCase(TestCase):
         self.assertEqual(str(profile), "hallo@test.com is a farmer")
 
         user2 = self.User.objects.create_user(
-            email=EMAIL2, password=PASSWORD, first_name="victory")
+            groups=self.group,
+            email=EMAIL2, password=PASSWORD,
+            first_name="victory"
+        )
         profile2 = Profile.objects.create(user=user2)
         self.assertEqual(str(profile2), "Victory")
         self.assertNotEqual(str(profile2), "hallo2@test.com")
@@ -209,47 +233,97 @@ class UserModelTestCase(TestCase):
 class CategoryTest(TestCase):
 
     def test_category_return_strings(self):
-        category = Category.objects.create(name="Vegetables")
+        category = Category.objects.create(category_name="Vegetables")
         self.assertEqual(str(category), "Vegetables")
 
     def test_category_slug_autoset(self):
-        category = Category.objects.create(name="Fruits")
+        category = Category.objects.create(category_name="Fruits")
         self.assertIsNotNone(category.slug)
         category.slug = "fruityso--009"
         category.save()
         self.assertNotEqual(category.slug, "fruityso--009")
 
     def test_category_slug_resets(self):
-        category = Category.objects.create(name="Minerals", slug="miney-00")
+        category = Category.objects.create(
+            category_name="Minerals", slug="miney-00")
         self.assertNotEqual(category.slug, "miney-00")
 
 
 class OrderTest(TestCase):
 
     def setUp(self):
-        self.user = User.objects.create_user(email=EMAIL2, password=PASSWORD)
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
+        self.user = User.objects.create_user(
+            groups=self.group, email=EMAIL2, password=PASSWORD)
+        self.order = Order.objects.create(consumer=self.user)
+        self.category = Category.objects.create(category_name="Fruits")
+        self.produce = Produce.objects.create(
+            produce_name="Orange-K",
+            produce_category=self.category,
+            owner=self.user
+        )
 
     def test_order_return_string(self):
         order = Order.objects.create(consumer=self.user)
-        self.assertEqual(str(order), str(order.order_id))
+        self.assertEqual(str(order), str(order.id))
+
+    def test_order_total_price(self):
+        order_item = OrderItem.objects.create(
+            order=self.order,
+            produce=self.produce,
+            quantity_ordered=15,
+        )
+        self.assertEqual(order_item.price, 15*self.produce.price_tag)
+        self.assertIsNotNone(self.order.total_cost)
 
 
 class OrderItemTest(TestCase):
 
     def setUp(self):
-        self.user = User.objects.create_user(email=EMAIL2, password=PASSWORD)
+        try:
+            self.group = Group.objects.get(name='anonymous')
+        except Group.DoesNotExist:
+            self.group = Group.objects.create(name='anonymous')
+        self.user = User.objects.create_user(groups=self.group,
+                                             email=EMAIL2, password=PASSWORD)
         self.order = Order.objects.create(consumer=self.user)
-        self.category = Category.objects.create(name="Fruits")
+        self.category = Category.objects.create(category_name="Fruits")
         self.produce = Produce.objects.create(
             produce_name="Blueberry",
             produce_category=self.category,
             owner=self.user
         )
 
+    def test_create_new_order(self):
+        old_order_count = Order.objects.count()
+        item_count = OrderItem.objects.count()
+        order = Order.objects.create(consumer=self.user)
+        OrderItem.objects.create(order=order,
+                                 produce=self.produce, quantity_ordered=3)
+        self.assertNotEqual(Order.objects.count(), old_order_count)
+        self.assertNotEqual(OrderItem.objects.count(), item_count)
+
     def test_item_id_return_string(self):
         item = OrderItem.objects.create(
             order=self.order,
-            product=self.produce,
+            produce=self.produce,
             quantity_ordered=10
         )
         self.assertEqual(str(item), "Item" + str(item.item_id))
+
+    def test_item_id_is_unique(self):
+        item = OrderItem.objects.create(
+            order=self.order,
+            produce=self.produce,
+            quantity_ordered=10
+        )
+        item2 = OrderItem.objects.create(
+            order=self.order,
+            produce=self.produce,
+            quantity_ordered=10
+        )
+        item2.item_id = item.item_id
+        self.assertRaises(IntegrityError, item2.save())
