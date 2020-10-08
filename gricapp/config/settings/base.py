@@ -56,7 +56,8 @@ DJANGO_APPS = (
 )
 THIRD_PARTY_APPS = (
     'rest_framework',
-    "django_extensions"
+    "django_extensions",
+    'whitenoise.runserver_nostatic',
 )
 
 LOCAL_APPS = (
@@ -68,6 +69,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 AUTH_USER_MODEL = 'gricapi.User'
 
 MIDDLEWARE = [
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -153,6 +155,8 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 )  # specifications on what files to look for
+STATICFILES_DIRS = [str(ROOT_DIR.path('gricapp/static'))
+                    ]
 
 MEDIA_URL = '/media/'
 
