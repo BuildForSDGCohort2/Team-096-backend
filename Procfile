@@ -1,1 +1,1 @@
-web: gunicorn gricapp.config.wsgi --log-file -
+web: cd gricapp && gunicorn config.wsgi --log-file -
