@@ -40,10 +40,9 @@ class UserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         profile_data = validated_data.pop('profile')
-        try:
-            group = Group.objects.get(name="anonymous")
-        except Group.DoesNotExist:
-            group = Group.objects.create(name="anonymous")
+        group, created = Group.objects.get_or_create(name="anonymous")
+        if created:
+            pass
         self.instance = User.objects.create_user(
             groups=group, **validated_data)
         Profile.objects.create(user=self.instance, **profile_data)

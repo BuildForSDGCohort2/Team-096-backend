@@ -22,7 +22,7 @@ PASSWORD = conf_reader.get_value(credentials_file, 'LOGIN_PASSWORD')
 class UserListCreateAPIView(APITestCase):
 
     def setUp(self):
-        self.url = reverse('api:user-list')
+        self.url = reverse('api:user-profile-list')
         try:
             self.group = Group.objects.get(name='anonymous')
         except Group.DoesNotExist:
@@ -74,7 +74,8 @@ class UserDetailsAPIView(APITestCase):
         self.user.save()
         self.client.force_authenticate(user=self.user)
         self.profile = Profile.objects.create(user=self.user)
-        self.url = reverse("api:user-detail", kwargs={'pk': self.user.id})
+        self.url = reverse("api:user-profile-detail",
+                           kwargs={'pk': self.user.id})
 
     def test_get_user_details(self):
         response = self.client.get(self.url)
@@ -142,6 +143,77 @@ class UserDetailsAPIView(APITestCase):
         response2 = self.client.delete(self.url)
         self.assertEqual(response2.status_code,
                          status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class UserProfileTestCase(APITestCase):
+
+    def setUp(self):
+        self.profile_list_url = reverse('user-list')
+        data = {
+            'email': EMAIL,
+            'password': "234kesAW!",
+            'profile': {
+                "is_farmer": "False"
+            }
+        }
+        # create a new user making a post request to djoser endpoint
+        self.user_data = self.client.post(
+            '/api/auth/users/', data=data, format="json")
+        # obtain a json web token for the newly created user
+        response = self.client.post(
+            '/api/auth/jwt/create/', data=data, format='json')
+        self.token = response.data['access']
+        self.api_authentication()
+
+    def api_authentication(self):
+        self.client.credentials(HTTP_AUTHORIZATION='JWT '+self.token)
+
+    def test_userprofile_list_authenticated(self):
+        """ retrieve a list of all user profiles
+            while the request user is authenticated.
+        """
+        response = self.client.get(self.profile_list_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.json()), 1)
+
+    def test_userprofile_list_unauthenticated(self):
+        """
+        retrieve a list of all user profiles
+        while the request user is unauthenticated
+        """
+        self.client.force_authenticate(user=None)
+        response = self.client.get(self.profile_list_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_userprofile_detail_retrieve(self):
+        """
+        check to retrieve the profile details of the authenticated user
+        """
+        response = self.client.get(
+            reverse('api:user-profile-detail', kwargs={'pk': 1}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_userprofile_profile(self):
+        """
+        populate the user profile
+        that was automatically created using the signals
+        """
+        user = User.objects.get(id=1)
+        profile_data = {
+            'email': user.email,
+            'profile': {
+                'about_me': 'I am a very famous game character',
+                'address': '23, nintendo world',
+            }
+        }
+        response = self.client.put(
+            reverse('api:user-profile-detail', kwargs={'pk': 1}),
+            data=profile_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data['profile']['address'],
+            profile_data['profile']['address']
+        )
 
 
 class ProduceListCreateAPIView(APITestCase):
@@ -256,9 +328,9 @@ class ProduceListCreateAPIView(APITestCase):
         self.client.logout()
         url = reverse('api:products-detail', kwargs={"pk": 1})
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class CategoryListCreate(APITestCase):
