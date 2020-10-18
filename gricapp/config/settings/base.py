@@ -11,12 +11,13 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 """
 
 import environ
+import os
 from decouple import config, Csv
 from dj_database_url import parse as db_url
 from datetime import timedelta
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-# BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # change BASE_DIR to ROOT_DIR
 ROOT_DIR = environ.Path(__file__) - 3
 
@@ -157,8 +158,8 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 )  # specifications on what files to look for
-# STATICFILES_DIRS = [str(ROOT_DIR.path('static'))
-#                     ]
+STATICFILES_DIRS = os.path.join(BASE_DIR, "static"),
+
 
 MEDIA_URL = '/media/'
 
