@@ -60,7 +60,6 @@ THIRD_PARTY_APPS = (
     'djoser',
     "django_extensions",
     "drf_yasg",
-    'whitenoise.runserver_nostatic',
 )
 
 LOCAL_APPS = (
@@ -221,3 +220,5 @@ LOGGING = {
         },
     }
 }
+
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
