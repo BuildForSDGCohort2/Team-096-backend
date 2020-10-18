@@ -20,8 +20,8 @@ from datetime import timedelta
 # change BASE_DIR to ROOT_DIR
 ROOT_DIR = environ.Path(__file__) - 3
 
-# use the environ.Env() function that will find a .env file in our project root,
-# then read_env() to make use of them.
+# use the environ.Env() function that will find a .env file
+# in our project root, then read_env() to make use of them.
 env = environ.Env()
 # This section added from an update to standards in CookieCutter Django
 # to ensure no errors are encountered at runserver/migrations
@@ -58,7 +58,8 @@ DJANGO_APPS = (
 THIRD_PARTY_APPS = (
     'rest_framework',
     'djoser',
-    "django_extensions"
+    "django_extensions",
+    "drf_yasg"
 )
 
 LOCAL_APPS = (

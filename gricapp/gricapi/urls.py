@@ -9,6 +9,12 @@ router.register(r'catalog/produce-category',
                 views.ProduceCategoryViewSet, basename="produce-category")
 router.register(r'shop/order', views.OrderViewSet, basename='shopping')
 
+# schema_view = get_schema_view(
+#     title='GRIC API',
+#     description="Api endpoints to use GricApp",
+#     renderer_classes=[OpenAPIRenderer, SwaggerUIRenderer],
+# )
+
 app_name = "api"
 urlpatterns = [
     path('', include(router.urls)),

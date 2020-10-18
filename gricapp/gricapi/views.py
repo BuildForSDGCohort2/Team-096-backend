@@ -178,6 +178,7 @@ class OrderViewSet(CreateModelMixin,
     """
     queryset = Order.objects.all()
     read_serializer_class = OrderListSerializer
+    serializer_class = read_serializer_class
     write_serializer_class = OrderCreateSerializer
 
     def get_permissions(self):
@@ -189,6 +190,15 @@ class OrderViewSet(CreateModelMixin,
         elif self.action == 'destroy':
             permission_classes = [IsOwnerOrAdmin]
         return [permission() for permission in permission_classes]
+
+    def get_serializer_class(self):
+        """
+        Determines which serializer to order `list` or `detail`
+        """
+        if self.action in ['create', 'update', 'destroy']:
+            if hasattr(self, 'write_serializer_class'):
+                return self.write_serializer_class
+        return self.read_serializer_class
 
     # pylint: disable=unused-argument
     def destroy(self, request, *args, **kwargs):

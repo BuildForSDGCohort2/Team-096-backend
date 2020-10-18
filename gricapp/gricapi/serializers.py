@@ -22,9 +22,9 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
 
-    date_joined = serializers.DateTimeField(
-        default=serializers.CreateOnlyDefault(timezone.now)
-    )
+    # date_joined = serializers.DateTimeField(
+    #     default=serializers.CreateOnlyDefault(timezone.now)
+    # )
     profile = ProfileSerializer()
 
     class Meta:
@@ -37,6 +37,7 @@ class UserSerializer(serializers.ModelSerializer):
                 'required': False
             }
         }
+        ref_name = "gricapi.User"
 
     def create(self, validated_data):
         profile_data = validated_data.pop('profile')
