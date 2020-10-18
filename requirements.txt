@@ -10,3 +10,4 @@ gunicorn==19.6.0
 django-extensions==3.0.9
 djoser==2.0.1
 djangorestframework_simplejwt==4.4.0
+drf-yasg==1.17
