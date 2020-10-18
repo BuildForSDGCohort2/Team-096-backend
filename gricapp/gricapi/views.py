@@ -170,10 +170,10 @@ class OrderViewSet(CreateModelMixin,
     Create a new order.
 
     Update:
-    Add and item to an order.
+    Add an item to an order.
 
     Destroy:
-    Delete an order and corresponding items.
+    Delete an order and its corresponding items.
 
     """
     queryset = Order.objects.all()
