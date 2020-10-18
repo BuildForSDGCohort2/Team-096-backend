@@ -59,7 +59,8 @@ THIRD_PARTY_APPS = (
     'rest_framework',
     'djoser',
     "django_extensions",
-    "drf_yasg"
+    "drf_yasg",
+    'whitenoise.runserver_nostatic',
 )
 
 LOCAL_APPS = (
