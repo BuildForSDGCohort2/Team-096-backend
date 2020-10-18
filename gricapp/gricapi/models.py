@@ -20,7 +20,7 @@ class UUIDModel(models.Model):
 
 class User(AbstractUser):
     groups = models.ForeignKey(
-        Group, on_delete=models.CASCADE)
+        Group, on_delete=models.CASCADE, null=True, blank=True)
     username = None
     email = models.EmailField(_('email address'), unique=True)
 
