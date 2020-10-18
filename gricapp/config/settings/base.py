@@ -158,8 +158,8 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 )  # specifications on what files to look for
-STATICFILES_DIRS = [str(ROOT_DIR.path('staticfiles'))
-                    ]
+# STATICFILES_DIRS = [str(ROOT_DIR.path('staticfiles'))
+#                     ]
 
 MEDIA_URL = '/media/'
 
