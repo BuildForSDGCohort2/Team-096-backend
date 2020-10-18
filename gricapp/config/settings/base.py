@@ -158,9 +158,9 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 )  # specifications on what files to look for
-# STATICFILES_DIRS = [str(ROOT_DIR.path('staticfiles'))
-#                     ]
-
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'static'),
+)
 MEDIA_URL = '/media/'
 
 # djangorestframework configurations
