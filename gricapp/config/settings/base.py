@@ -157,7 +157,8 @@ STATIC_ROOT = str(ROOT_DIR('staticfiles'))
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-)  # specifications on what files to look for
+)
+# specifications on what files to look for
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'static'),
 )
